@@ -8,14 +8,30 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimizations,
     });
-    const exe = b.addExecutable(.{
+    const web_main_mod = b.createModule(.{
+        .root_source_file = b.path("src/web_main.zig"),
+        .target = target,
+        .optimize = optimizations,
+    });
+
+    const cliexe = b.addExecutable(.{
         .root_module = main_mod,
         .name = "Chapter4WordDict",
     });
-    b.installArtifact(exe);
+    const webexe = b.addExecutable(.{
+        .root_module = web_main_mod,
+        .name = "tcp_game",
+    });
+
+    b.installArtifact(cliexe);
+    b.installArtifact(webexe);
 
     //steps
     const run_step = b.step("run", "runs the main artifact right after");
-    const exe_run_step = b.addRunArtifact(exe);
-    run_step.dependOn(&exe_run_step.step);
+    const cli_exe_run_step = b.addRunArtifact(cliexe);
+    run_step.dependOn(&cli_exe_run_step.step);
+
+    const tcp_run_step = b.step("tcp", "runs the tcp server after build");
+    const tcp_exe_run_step = b.addRunArtifact(webexe);
+    tcp_run_step.dependOn(&tcp_exe_run_step.step);
 }
