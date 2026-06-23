@@ -3,7 +3,13 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimizations = b.standardOptimizeOption(.{});
-    const main_mod = b.createModule(.{
+    const ladder_mod = b.createModule(.{
+        .root_source_file = b.path("src/ladder.zig"),
+        .target = target,
+        .optimize = optimizations,
+    });
+
+    const cli_entry_mod = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimizations,
@@ -13,9 +19,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimizations,
     });
+    cli_entry_mod.addImport("ladder", ladder_mod);
+    web_main_mod.addImport("ladder", ladder_mod);
 
     const cliexe = b.addExecutable(.{
-        .root_module = main_mod,
+        .root_module = cli_entry_mod,
         .name = "Chapter4WordDict",
     });
     const webexe = b.addExecutable(.{
