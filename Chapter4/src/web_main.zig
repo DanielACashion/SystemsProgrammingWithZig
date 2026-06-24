@@ -1,6 +1,7 @@
 const std = @import("std");
 const Ladder = @import("ladder");
 const ladder_html = @embedFile("index.html");
+
 pub fn main(init: std.process.Init) !void {
     //
     const addr = try std.Io.net.IpAddress.parseIp4("127.0.0.1", 8000);
@@ -19,7 +20,7 @@ pub fn main(init: std.process.Init) !void {
         };
         defer conn.close(init.io);
 
-        handleConnection(init.io, random, conn) catch |err| {
+        handleConnection(init.io, random, conn, init.gpa) catch |err| {
             std.log.err("handleConnection: {}", .{err});
         };
     }
@@ -29,6 +30,7 @@ fn handleConnection(
     io: std.Io,
     random: std.Random,
     conn: std.Io.net.Stream,
+    allocator: std.mem.Allocator,
 ) !void {
     //
     var conn_read_buf: [1024]u8 = undefined;
@@ -66,7 +68,7 @@ fn handleConnection(
                 var reader_buff: [1024]u8 = undefined;
                 const reader = try request.readerExpectContinue(&reader_buff);
                 const text = try reader.takeDelimiterExclusive(0);
-                Ladder.validateLadder(text) catch |err| {
+                Ladder.validateLadder(text, allocator) catch |err| {
                     request.respond(@errorName(err), .{ .status = .bad_request }) catch {};
                     return;
                 };

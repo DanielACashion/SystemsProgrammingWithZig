@@ -4,14 +4,20 @@ pub const words = blk: {
     @setEvalBranchQuota(1_000_000);
     break :blk parseWordList(@embedFile("words.txt"));
 };
-pub fn validateLadder(ladder: []const u8) !void {
+pub fn validateLadder(ladder: []const u8, allocator: std.mem.Allocator) !void {
+    var used_words: std.StringHashMap(void) = .init(allocator);
     var word_iter = std.mem.tokenizeScalar(u8, ladder, '\n');
     const first_word = word_iter.next() orelse {
         return error.EmptyLadder;
     };
     if (first_word.len != 4) return error.BadLength;
     var last_word: [4]u8 = @as(*const [4]u8, @ptrCast(first_word.ptr)).*;
+    try used_words.put(first_word, {});
     while (word_iter.next()) |curr_word| {
+        if (used_words.get(curr_word)) |_| {
+            return error.RepeatedWord;
+        }
+        try used_words.put(curr_word, {});
         const word = try validateWord(curr_word, last_word);
         last_word = word;
     }
