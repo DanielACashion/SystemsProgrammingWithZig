@@ -30,8 +30,11 @@ pub fn main(init: std.process.Init) !void {
     var write_buf: [1024]u8 = undefined;
     const stdout_writer = std.Io.File.stdout().writer(init.io, &write_buf);
     const stdout = &stdout_writer.interface;
+    const zig_string = "this is a zig string!";
+    const c_string = zig_string[0.. :'!'];
 
     try stdout.print("Starting Chapter 5\n", .{});
+    try stdout.print("{s}\n", .{c_string});
     try stdout.flush();
 }
 
@@ -45,3 +48,8 @@ const EntityTable = struct {
     kinds: std.ArrayList(EntityKind) = .empty,
     positions: std.ArrayList([2]i32) = .empty,
 };
+
+const Color = enum { red, yellow, blue };
+
+const my_favorite_color = Color.blue;
+const my_least_favorite_color: Color = .yellow;
