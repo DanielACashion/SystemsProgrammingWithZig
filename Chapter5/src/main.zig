@@ -5,10 +5,34 @@ export fn recipes_quit() void {
     _ = gpa.deinit();
     gpa = .init;
 }
+const RecipeId = enum(c_int) { _ };
 const RecipeBook = struct {
     const Self = @This();
-    fn deinit(allocator: std.mem.Allocator) void {
-        _ = allocator;
+    const Recipe = struct {
+        name: [:0]const u8,
+        author: [:0]const u8,
+        instructions: [:0]const u8,
+    };
+    const Ingredient = struct {
+        recipe_id: RecipeId,
+        quantity: [:0]const u8,
+        name: [:0]const u8,
+    };
+    string_arena: std.heap.ArenaAllocator,
+    recipes: std.AutoHashMapUnmanaged(RecipeId, Recipe),
+    ingredients: std.ArrayList(Ingredient),
+
+    fn init(allocator: std.mem.Allocator) Self {
+        return .{
+            .string_arena = .init(allocator),
+            .recipes = .empty,
+            .ingredients = .empty,
+        };
+    }
+    fn deinit(self: *Self, allocator: std.mem.Allocator) void {
+        self.string_arena.deinit();
+        self.recipes.deinit(allocator);
+        self.ingredients.deinit(allocator);
     }
 };
 export fn recipe_book_create() ?*RecipeBook {
@@ -28,13 +52,11 @@ export fn recipe_book_close(book: *RecipeBook) void {
 
 pub fn main(init: std.process.Init) !void {
     var write_buf: [1024]u8 = undefined;
-    const stdout_writer = std.Io.File.stdout().writer(init.io, &write_buf);
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &write_buf);
     const stdout = &stdout_writer.interface;
-    const zig_string = "this is a zig string!";
-    const c_string = zig_string[0.. :'!'];
 
     try stdout.print("Starting Chapter 5\n", .{});
-    try stdout.print("{s}\n", .{c_string});
+
     try stdout.flush();
 }
 
