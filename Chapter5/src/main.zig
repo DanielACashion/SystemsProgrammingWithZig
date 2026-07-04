@@ -1,5 +1,6 @@
 const std = @import("std");
 
+//refactor this out into its own abi module
 var gpa: std.heap.DebugAllocator(.{}) = .init;
 export fn recipes_quit() void {
     _ = gpa.deinit();
