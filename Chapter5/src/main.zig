@@ -22,6 +22,7 @@ const RecipeBook = struct {
     string_arena: std.heap.ArenaAllocator,
     recipes: std.AutoHashMapUnmanaged(RecipeId, Recipe),
     ingredients: std.ArrayList(Ingredient),
+    next_recipe_num: c_int = 0,
 
     fn init(allocator: std.mem.Allocator) Self {
         return .{
@@ -34,6 +35,17 @@ const RecipeBook = struct {
         self.string_arena.deinit();
         self.recipes.deinit(allocator);
         self.ingredients.deinit(allocator);
+    }
+    fn createRecipe(self: *Self, allocator: std.mem.Allocator, recipe: Recipe) !RecipeId {
+        //
+        const id: RecipeId = @enumFromInt(self.next_recipe_num);
+        self.next_recipe_num += 1;
+        try self.recipes.put(allocator, id, recipe);
+        return id;
+    }
+    const GetRecipeError = error{NonexistentRecipe};
+    fn getRecipe(self: Self, id: RecipeId) GetRecipeError!Recipe {
+        return self.recipes.get(id) orelse error.NonexistentRecipe;
     }
 };
 export fn recipe_book_create() ?*RecipeBook {
