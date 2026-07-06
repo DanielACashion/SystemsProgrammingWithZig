@@ -43,11 +43,17 @@ const RecipeBook = struct {
         try self.recipes.put(allocator, id, recipe);
         return id;
     }
+    fn dupeCString(self: *Self, cstr: [*:0]const u8) ![:0]const u8 {
+        const arena_allocator = self.string_arena.allocator();
+        const slice = std.mem.span(cstr);
+        return arena_allocator.dupe(u8, slice);
+    }
     const GetRecipeError = error{NonexistentRecipe};
     fn getRecipe(self: Self, id: RecipeId) GetRecipeError!Recipe {
         return self.recipes.get(id) orelse error.NonexistentRecipe;
     }
 };
+
 export fn recipe_book_create() ?*RecipeBook {
     const allocator = gpa.allocator();
     const book = allocator.create(RecipeBook) catch {
