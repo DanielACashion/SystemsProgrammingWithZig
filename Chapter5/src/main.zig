@@ -48,9 +48,42 @@ const RecipeBook = struct {
         const slice = std.mem.span(cstr);
         return arena_allocator.dupe(u8, slice);
     }
+
+    fn addIngredient(self: *Self, allocator: std.mem.Allocator, recipeId: RecipeId, quantity: [:0]const u8, name: [:0]const u8) !void {
+        try self.ingredients.append(allocator, .{ .recipe_id = recipeId, .quantity = quantity, .name = name });
+    }
+    const IngredientIterator = struct {
+        book: *const RecipeBook,
+        recipe_id: RecipeId,
+        index: usize = 0,
+        fn next(iter: *@This()) ?Ingredient {
+            return while (iter.index < iter.book.ingredients.items.len) {
+                const ingredient = iter.book.ingredients.items[iter.index];
+                iter.index += 1;
+                if (ingredient.recipe_id == iter.recipe_id) {
+                    return ingredient;
+                }
+            } else null;
+        }
+    };
+    fn iterateIngredients(self: *const RecipeBook, recipe_id: RecipeId) IngredientIterator {
+        return .{ .book = self, .recipe_id = recipe_id };
+    }
+
     const GetRecipeError = error{NonexistentRecipe};
     fn getRecipe(self: Self, id: RecipeId) GetRecipeError!Recipe {
         return self.recipes.get(id) orelse error.NonexistentRecipe;
+    }
+    fn deleteRecipe(self: *Self, recipe_id: RecipeId) void {
+        _ = self.recipes.remove(recipe_id);
+        var i: usize = 0;
+        while (i < self.ingredients.items.len) {
+            if (self.ingredients.items[i].recipe_id == recipe_id) {
+                _ = self.ingredients.orderedRemove(i);
+                continue;
+            }
+            i += 1;
+        }
     }
 };
 
@@ -77,6 +110,12 @@ pub fn main(init: std.process.Init) !void {
     try stdout.print("Starting Chapter 5\n", .{});
 
     try stdout.flush();
+    var recipe_book = RecipeBook.init(init.gpa);
+    var ingredients = recipe_book.iterateIngredients(0);
+    while (ingredients.next()) |ingredient| {
+        // do stuff
+        _ = ingredient;
+    }
 }
 
 //EXAMPLES
